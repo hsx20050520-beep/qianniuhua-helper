@@ -71,6 +71,11 @@ class QnhAccessibilityService : AccessibilityService() {
         private const val PULL_REFRESH_WAIT_MS = 1500L
 
         private const val STAGE_PULL_REFRESH = "pull_refresh"
+
+        @Volatile
+        private var running = false
+
+        fun isServiceRunning(): Boolean = running
     }
 
     private var lastClickAt = 0L
@@ -85,10 +90,12 @@ class QnhAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        running = true
         startWatchdog()
     }
 
     override fun onDestroy() {
+        running = false
         stopPolling()
         stopActivePolling()
         stopWatchdog()
