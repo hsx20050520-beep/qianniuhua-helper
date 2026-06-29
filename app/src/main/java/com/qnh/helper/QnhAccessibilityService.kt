@@ -538,6 +538,7 @@ class QnhAccessibilityService : AccessibilityService() {
     // ---- 猴儿家跳转 ----
 
     private var houerjiaStep = 0  // 0=待点击底部导航, 1=待点击顶部打卡
+    private var houerjiaStep1Retry = 0  // 第二步重试次数
 
     private fun navigateHouerjiaOnce(now: Long): Boolean {
         val root = rootInActiveWindow ?: return false
@@ -549,16 +550,20 @@ class QnhAccessibilityService : AccessibilityService() {
                     lastClickAt = now
                     lastNavigationAt = now
                     houerjiaStep = 1
+                    houerjiaStep1Retry = 0
                     LogRecorder.i(this, TAG, "猴儿家：已点击底部导航，等待页面切换")
-                    return false // 操作已执行，但整个流程未完成，继续下一步
+                    return false
                 }
                 return false
             }
             1 -> {
-                // 第二步：等页面切换后，点击顶部"打卡"
+                // 第二步：等页面切换后（500ms），点击顶部"打卡"
                 if (now - lastNavigationAt < 500) {
                     return false
                 }
+                houerjiaStep1Retry++
+                LogRecorder.d(this, TAG, "猴儿家：第二步第${houerjiaStep1Retry}次尝试点击打卡")
+
                 if (clickByTexts(root, listOf("打卡"))) {
                     lastClickAt = now
                     val msg = "猴儿家：已点击顶部打卡，跳转完成"
@@ -568,14 +573,14 @@ class QnhAccessibilityService : AccessibilityService() {
                     houerjiaStep = 0
                     return true
                 }
-                // 点不到打卡，尝试文字"打卡"
-                if (hasAnyText(root, listOf("打卡"))) {
-                    val msg = "猴儿家：已在打卡页面，跳转完成"
-                    Log.d(TAG, msg)
-                    LogRecorder.i(this, TAG, msg)
+                // 超时保护：重试 20 次（约 10 秒）后放弃
+                if (houerjiaStep1Retry > 20) {
+                    val msg = "猴儿家：第二步超时，未能点击打卡，放弃跳转"
+                    Log.w(TAG, msg)
+                    LogRecorder.w(this, TAG, msg)
                     QnhLauncher.clearHouerjiaPending(this)
                     houerjiaStep = 0
-                    return true
+                    return false
                 }
                 return false
             }
