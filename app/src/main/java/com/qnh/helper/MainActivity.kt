@@ -1,5 +1,6 @@
 package com.qnh.helper
 
+import android.app.TimePickerDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
@@ -160,6 +161,57 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(testHouerjia, lp())
 
+        // 定时打卡提醒
+        root.addView(spacer(16))
+        root.addView(TextView(this).apply {
+            text = "定时打卡提醒"
+            textSize = 16f
+            setPadding(0, 0, 0, dp(8))
+        })
+
+        val alarmSwitch = Switch(this).apply {
+            text = "启用定时打卡提醒"
+            isChecked = AlarmScheduler.isEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    showTimePickerDialog { hour, minute ->
+                        AlarmScheduler.setAlarm(this@MainActivity, hour, minute)
+                        alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(hour, minute)}"
+                        refreshStatus()
+                    }
+                } else {
+                    AlarmScheduler.cancelAlarm(this@MainActivity)
+                    alarmSwitch.text = "启用定时打卡提醒"
+                    refreshStatus()
+                }
+            }
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+        }
+        root.addView(alarmSwitch, lp())
+
+        // 如果已设置过时间，显示当前设置
+        if (AlarmScheduler.isEnabled(this@MainActivity)) {
+            val h = AlarmScheduler.getHour(this)
+            val m = AlarmScheduler.getMinute(this)
+            if (h >= 0 && m >= 0) {
+                alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(h, m)}"
+            }
+        }
+
+        val changeTimeBtn = Button(this).apply {
+            text = "修改定时打卡时间"
+            setOnClickListener {
+                val h = AlarmScheduler.getHour(this@MainActivity)
+                val m = AlarmScheduler.getMinute(this@MainActivity)
+                showTimePickerDialog(h.coerceAtLeast(0), m.coerceAtLeast(0)) { hour, minute ->
+                    AlarmScheduler.setAlarm(this@MainActivity, hour, minute)
+                    alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(hour, minute)}"
+                    Toast.makeText(this@MainActivity, "打卡时间已设置为 ${AlarmScheduler.formatTime(hour, minute)}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        root.addView(changeTimeBtn, lp())
+
         root.addView(spacer(16))
 
         // 日志区域标题
@@ -274,6 +326,14 @@ class MainActivity : AppCompatActivity() {
         val enabled = prefs.getBoolean("enabled", true)
         val floatingEnabled = FloatingWindowService.isEnabled(this)
         val backEnabled = QnhLauncher.isBackEnabled(this)
+        val alarmEnabled = AlarmScheduler.isEnabled(this)
+        val alarmHour = AlarmScheduler.getHour(this)
+        val alarmMinute = AlarmScheduler.getMinute(this)
+        val alarmTimeStr = if (alarmEnabled && alarmHour >= 0 && alarmMinute >= 0) {
+            " ${AlarmScheduler.formatTime(alarmHour, alarmMinute)} ✅"
+        } else {
+            " ❌"
+        }
 
         val sb = StringBuilder()
         sb.append("通知使用权：").append(if (notificationGranted) "已授权 ✅" else "未授权 ❌").append('\n')
@@ -283,6 +343,7 @@ class MainActivity : AppCompatActivity() {
         sb.append("自动进入拣货任务：").append(if (enabled) "已启用 ✅" else "已关闭 ❌").append('\n')
         sb.append("悬浮窗按钮：").append(if (floatingEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
         sb.append("页面回退功能：").append(if (backEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
+        sb.append("定时打卡提醒：").append(alarmTimeStr).append('\n')
         sb.append("牵牛花是否安装：").append(if (installed) "已安装 ✅" else "未安装 ❌")
         statusLine.text = sb.toString()
 
@@ -407,6 +468,18 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "打开猴儿家失败", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showTimePickerDialog(defaultHour: Int = 9, defaultMinute: Int = 0, onTimeSet: (hour: Int, minute: Int) -> Unit) {
+        val hour = if (defaultHour < 0) 9 else defaultHour
+        val minute = if (defaultMinute < 0) 0 else defaultMinute
+        TimePickerDialog(
+            this,
+            { _, h, m -> onTimeSet(h, m) },
+            hour,
+            minute,
+            true
+        ).show()
     }
 
     private fun copyLogs() {
