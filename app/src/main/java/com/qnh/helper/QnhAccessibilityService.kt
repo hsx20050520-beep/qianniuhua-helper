@@ -514,17 +514,44 @@ class QnhAccessibilityService : AccessibilityService() {
                 }
             }
         }
-        return false
+        // 同时检查 contentDescription
+        return findNodesByContentDesc(root, texts).isNotEmpty()
     }
 
     private fun clickByTexts(root: AccessibilityNodeInfo, texts: List<String>): Boolean {
+        // 先按 text 查找
         for (text in texts) {
             val nodes = root.findAccessibilityNodeInfosByText(text)
             for (node in nodes) {
                 if (clickNodeOrParent(node)) return true
             }
         }
+        // 再按 contentDescription 查找
+        val descNodes = findNodesByContentDesc(root, texts)
+        for (node in descNodes) {
+            if (clickNodeOrParent(node)) return true
+        }
         return false
+    }
+
+    // 递归查找匹配 contentDescription 的可见节点
+    private fun findNodesByContentDesc(root: AccessibilityNodeInfo?, keywords: List<String>): List<AccessibilityNodeInfo> {
+        val result = mutableListOf<AccessibilityNodeInfo>()
+        root ?: return result
+        fun walk(node: AccessibilityNodeInfo?) {
+            node ?: return
+            if (node.isVisibleToUser) {
+                val desc = node.contentDescription?.toString()
+                if (desc != null && keywords.any { desc.contains(it) }) {
+                    result.add(node)
+                }
+            }
+            for (i in 0 until node.childCount) {
+                walk(node.getChild(i))
+            }
+        }
+        walk(root)
+        return result
     }
 
     private fun clickNodeOrParent(node: AccessibilityNodeInfo?): Boolean {
