@@ -576,11 +576,16 @@ class QnhAccessibilityService : AccessibilityService() {
                     houerjiaStep = 0
                     return true
                 }
+                // 第1次和第5次失败时 dump 页面文本，帮助诊断
+                if (houerjiaStep1Retry == 1 || houerjiaStep1Retry == 5) {
+                    LogRecorder.d(this, TAG, "猴儿家：页面可见文本：${dumpVisibleTexts(root)}")
+                }
                 // 超时保护：重试 20 次（约 10 秒）后放弃
                 if (houerjiaStep1Retry > 20) {
                     val msg = "猴儿家：第二步超时，未能点击打卡，放弃跳转"
                     Log.w(TAG, msg)
                     LogRecorder.w(this, TAG, msg)
+                    LogRecorder.w(this, TAG, "猴儿家：最终页面可见文本：${dumpVisibleTexts(root)}")
                     QnhLauncher.clearHouerjiaPending(this)
                     houerjiaStep = 0
                     return false
@@ -593,6 +598,23 @@ class QnhAccessibilityService : AccessibilityService() {
 
     private fun isOnHouerjiaAttendancePage(root: AccessibilityNodeInfo): Boolean {
         return hasAnyText(root, listOf("打卡"))
+    }
+
+    // 递归遍历节点树，收集所有可见文本
+    private fun dumpVisibleTexts(root: AccessibilityNodeInfo): String {
+        val texts = mutableListOf<String>()
+        fun walk(node: AccessibilityNodeInfo?) {
+            node ?: return
+            if (node.isVisibleToUser) {
+                node.text?.let { texts.add(it.toString()) }
+                node.contentDescription?.let { texts.add("[$it]") }
+            }
+            for (i in 0 until node.childCount) {
+                walk(node.getChild(i))
+            }
+        }
+        walk(root)
+        return texts.filter { it.isNotBlank() }.joinToString(" | ")
     }
 
     // 找到底部导航栏，按索引点击Tab

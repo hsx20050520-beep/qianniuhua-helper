@@ -11,8 +11,8 @@ android {
         applicationId = "com.qnh.helper"
         minSdk = 24
         targetSdk = 34
-        versionCode = 51
-        versionName = "1.5.4"
+        versionCode = 52
+        versionName = "1.5.5"
     }
 
     signingConfigs {
