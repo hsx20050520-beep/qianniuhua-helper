@@ -119,6 +119,9 @@ class QnhAccessibilityService : AccessibilityService() {
 
     private fun ensureActivePolling() {
         if (activePollRunnable != null) return
+        // 每次主动轮询启动时重置猴儿家跳转状态，防止上次残留
+        houerjiaStep = 0
+        houerjiaStep1Retry = 0
         activePollRunnable = object : Runnable {
             override fun run() {
                 val qnhPending = QnhLauncher.isPickingTaskPending(this@QnhAccessibilityService)
