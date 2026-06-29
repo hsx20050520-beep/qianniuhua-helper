@@ -60,7 +60,7 @@ object AlarmScheduler {
         }
     }
 
-    private fun scheduleNextAlarm(context: Context, hour: Int, minute: Int) {
+    fun scheduleNextAlarm(context: Context, hour: Int, minute: Int) {
         val calendar = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)

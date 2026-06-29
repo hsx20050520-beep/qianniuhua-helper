@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var enableSwitch: Switch
     private lateinit var floatingSwitch: Switch
     private lateinit var backSwitch: Switch
+    private lateinit var alarmSwitch: Switch
     private lateinit var logTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, 0, 0, dp(8))
         })
 
-        val alarmSwitch = Switch(this).apply {
+        alarmSwitch = Switch(this).apply {
             text = "启用定时打卡提醒"
             isChecked = AlarmScheduler.isEnabled(this@MainActivity)
             setOnCheckedChangeListener { _, isChecked ->
