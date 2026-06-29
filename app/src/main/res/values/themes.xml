@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.QnhHelper" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/qnh_primary</item>
+        <item name="colorPrimaryDark">@color/qnh_primary_dark</item>
+        <item name="colorAccent">@color/qnh_accent</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+</resources>

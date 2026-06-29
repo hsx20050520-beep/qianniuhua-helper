@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="qnh_primary">#16A34A</color>
+    <color name="qnh_primary_dark">#15803D</color>
+    <color name="qnh_accent">#22C55E</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
