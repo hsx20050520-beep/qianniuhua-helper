@@ -11,8 +11,8 @@ android {
         applicationId = "com.qnh.helper"
         minSdk = 24
         targetSdk = 34
-        versionCode = 57
-        versionName = "1.6.0"
+        versionCode = 58
+        versionName = "2.0.0"
     }
 
     signingConfigs {
@@ -48,4 +48,8 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
