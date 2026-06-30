@@ -11,7 +11,10 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.RotateAnimation
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
@@ -21,11 +24,16 @@ import androidx.fragment.app.Fragment
 
 class HomeFragment : Fragment() {
 
-    private lateinit var statusCard: TextView
+    private lateinit var statusTitle: TextView
+    private lateinit var statusDesc: TextView
+    private lateinit var statusCard: View
+    private lateinit var arrowIcon: ImageView
+    private lateinit var permsTitle: TextView
+    private lateinit var permsContent: LinearLayout
+    private lateinit var permsActionContainer: LinearLayout
     private lateinit var enableSwitch: Switch
     private lateinit var floatingSwitch: Switch
     private lateinit var backSwitch: Switch
-    private lateinit var permsContainer: LinearLayout
     private var permsExpanded = false
 
     override fun onCreateView(
@@ -44,74 +52,37 @@ class HomeFragment : Fragment() {
             textSize = 24f
             setTextColor(0xFF0F172A.toInt())
             setPadding(0, dp(8), 0, dp(4))
+            paint.isFakeBoldText = true
         })
 
         root.addView(TextView(requireContext()).apply {
             text = "自动跳转到拣货任务待领取页面"
             textSize = 14f
             setTextColor(0xFF64748B.toInt())
-            setPadding(0, 0, 0, dp(16))
+            setPadding(0, 0, 0, dp(20))
         })
 
-        statusCard = TextView(requireContext()).apply {
-            textSize = 13f
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            setBackgroundColor(0xFFF8FAFC.toInt())
-            setBackgroundResource(R.drawable.card_bg)
-        }
-        root.addView(statusCard, lp())
-        (statusCard.layoutParams as LinearLayout.LayoutParams).bottomMargin = dp(16)
+        val (sCard, sTitle, sDesc) = buildStatusCard()
+        statusCard = sCard
+        statusTitle = sTitle
+        statusDesc = sDesc
+        root.addView(sCard, lp())
+        (sCard.layoutParams as LinearLayout.LayoutParams).bottomMargin = dp(16)
 
-        root.addView(buildSectionTitle("快捷权限"))
-        permsContainer = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        val permBtn1 = buildPrimaryBtn("授予通知使用权") { openNotificationListenerSettings() }
-        val permBtn2 = buildPrimaryBtn("授予无障碍权限") { openAccessibilitySettings() }
-        val permBtn3 = buildPrimaryBtn("授予悬浮窗权限") { openOverlaySettings() }
-        val permBtn4 = buildPrimaryBtn("加入电池白名单（推荐）") { requestBatteryExemption() }
-        permsContainer.addView(permBtn1)
-        permsContainer.addView(permBtn2)
-        permsContainer.addView(permBtn3)
-        permsContainer.addView(permBtn4)
-        root.addView(permsContainer, lp())
-        root.addView(spacer(dp(16)))
+        val (pCard, aIcon, pTitle, pContent, pActions) = buildCollapsiblePermsCard()
+        arrowIcon = aIcon
+        permsTitle = pTitle
+        permsContent = pContent
+        permsActionContainer = pActions
+        root.addView(pCard, lp())
+        (pCard.layoutParams as LinearLayout.LayoutParams).bottomMargin = dp(16)
 
-        root.addView(buildSectionTitle("功能开关"))
-
-        enableSwitch = buildSwitch("自动进入拣货任务",
-            requireActivity().getSharedPreferences("qnh_helper", 0).getBoolean("enabled", true)
-        ) { _, isChecked ->
-            requireActivity().getSharedPreferences("qnh_helper", 0).edit()
-                .putBoolean("enabled", isChecked).apply()
-            refreshStatus()
-        }
-        root.addView(enableSwitch, lp())
-
-        floatingSwitch = buildSwitch("悬浮窗按钮", FloatingWindowService.isEnabled(requireContext()))
-        { buttonView, isChecked ->
-            if (isChecked && !isOverlayEnabled()) {
-                Toast.makeText(requireContext(), "请先授予悬浮窗权限", Toast.LENGTH_SHORT).show()
-                buttonView.isChecked = false
-                return@buildSwitch
-            }
-            FloatingWindowService.setEnabled(requireContext(), isChecked)
-            refreshStatus()
-        }
-        root.addView(floatingSwitch, lp())
-
-        backSwitch = buildSwitch("页面回退功能", QnhLauncher.isBackEnabled(requireContext()))
-        { _, isChecked ->
-            QnhLauncher.setBackEnabled(requireContext(), isChecked)
-            refreshStatus()
-        }
-        root.addView(backSwitch, lp())
-
-        root.addView(spacer(dp(16)))
+        val fCard = buildFeatureCard()
+        root.addView(fCard, lp())
+        (fCard.layoutParams as LinearLayout.LayoutParams).bottomMargin = dp(20)
 
         val testBtn = buildPrimaryBtn("测试：进入待领取") { testOpenPickingTask() }
         root.addView(testBtn, lp())
-
         root.addView(spacer(dp(16)))
 
         root.addView(buildTipCard("💡 建议开启电池白名单，防止系统杀后台导致通知监听失效"))
@@ -122,15 +93,214 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        refreshStatus()
+        refreshAllStatus()
     }
 
-    private fun buildSectionTitle(text: String): View {
-        return TextView(requireContext()).apply {
-            this.text = text
+    private fun buildStatusCard(): Triple<View, TextView, TextView> {
+        val card = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(18))
+            setBackgroundResource(R.drawable.gradient_card_bg)
+        }
+
+        val title = TextView(requireContext()).apply {
+            text = "运行正常"
+            textSize = 20f
+            setTextColor(0xFFFFFFFF.toInt())
+            paint.isFakeBoldText = true
+        }
+        card.addView(title)
+
+        val desc = TextView(requireContext()).apply {
+            text = "所有权限已授权，随时待命"
+            textSize = 13f
+            setTextColor(0xCCFFFFFF.toInt())
+            setPadding(0, dp(4), 0, 0)
+        }
+        card.addView(desc)
+
+        return Triple(card, title, desc)
+    }
+
+    private fun buildCollapsiblePermsCard(): ViewGroup.Quadruple<View, ImageView, TextView, LinearLayout, LinearLayout> {
+        val card = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            setBackgroundResource(R.drawable.card_bg)
+        }
+
+        val header = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+
+        val title = TextView(requireContext()).apply {
+            text = "权限状态"
             textSize = 15f
-            setTextColor(0xFF334155.toInt())
-            setPadding(0, dp(4), 0, dp(10))
+            setTextColor(0xFF0F172A.toInt())
+            paint.isFakeBoldText = true
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        header.addView(title)
+
+        val countText = TextView(requireContext()).apply {
+            text = "5/5"
+            textSize = 13f
+            setTextColor(0xFF10B981.toInt())
+            setPadding(0, 0, dp(8), 0)
+        }
+        header.addView(countText)
+
+        val arrow = ImageView(requireContext()).apply {
+            setImageResource(android.R.drawable.arrow_down_float)
+            setColorFilter(0xFF94A3B8.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+        }
+        header.addView(arrow)
+
+        header.setOnClickListener {
+            togglePerms(arrow, countText)
+        }
+
+        card.addView(header)
+
+        val content = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+
+        val divider = View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(1)
+            ).apply {
+                topMargin = dp(12)
+                bottomMargin = dp(12)
+            }
+            setBackgroundColor(0xFFE2E8F0.toInt())
+        }
+        content.addView(divider)
+
+        val permLabels = listOf(
+            "通知使用权" to ::isNotificationListenerEnabled,
+            "无障碍权限" to ::isAccessibilityEnabled,
+            "悬浮窗权限" to ::isOverlayEnabled,
+            "电池白名单" to ::isBatteryExempt,
+            "牵牛花已安装" to ::isQnhInstalled
+        )
+        for ((label, check) in permLabels) {
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(6), 0, dp(6))
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            val dot = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(6), dp(6)).apply {
+                    marginEnd = dp(10)
+                }
+                setBackgroundColor(0xFFCBD5E1.toInt())
+                setBackgroundResource(android.R.drawable.presence_online)
+            }
+            row.addView(TextView(requireContext()).apply {
+                text = label
+                textSize = 14f
+                setTextColor(0xFF334155.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            row.addView(TextView(requireContext()).apply {
+                text = if (check()) "✅" else "❌"
+                textSize = 14f
+            })
+            content.addView(row)
+        }
+
+        val actionContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, dp(12), 0, 0)
+        }
+
+        card.addView(content)
+        card.addView(actionContainer)
+
+        return ViewGroup.Quadruple(card, arrow, title, content, actionContainer)
+    }
+
+    private fun buildFeatureCard(): View {
+        val card = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(6))
+            setBackgroundResource(R.drawable.card_bg)
+        }
+
+        card.addView(TextView(requireContext()).apply {
+            text = "功能开关"
+            textSize = 15f
+            setTextColor(0xFF0F172A.toInt())
+            paint.isFakeBoldText = true
+            setPadding(0, 0, 0, dp(4))
+        })
+
+        val divider = View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(1)
+            ).apply {
+                topMargin = dp(8)
+                bottomMargin = dp(4)
+            }
+            setBackgroundColor(0xFFE2E8F0.toInt())
+        }
+        card.addView(divider)
+
+        enableSwitch = buildSwitch("自动进入拣货任务",
+            requireActivity().getSharedPreferences("qnh_helper", 0).getBoolean("enabled", true)
+        ) { _, isChecked ->
+            requireActivity().getSharedPreferences("qnh_helper", 0).edit()
+                .putBoolean("enabled", isChecked).apply()
+            refreshAllStatus()
+        }
+        card.addView(enableSwitch, lp())
+
+        floatingSwitch = buildSwitch("悬浮窗按钮", FloatingWindowService.isEnabled(requireContext()))
+        { buttonView, isChecked ->
+            if (isChecked && !isOverlayEnabled()) {
+                Toast.makeText(requireContext(), "请先授予悬浮窗权限", Toast.LENGTH_SHORT).show()
+                buttonView.isChecked = false
+                return@buildSwitch
+            }
+            FloatingWindowService.setEnabled(requireContext(), isChecked)
+            refreshAllStatus()
+        }
+        card.addView(floatingSwitch, lp())
+
+        backSwitch = buildSwitch("页面回退功能", QnhLauncher.isBackEnabled(requireContext()))
+        { _, isChecked ->
+            QnhLauncher.setBackEnabled(requireContext(), isChecked)
+            refreshAllStatus()
+        }
+        card.addView(backSwitch, lp())
+
+        return card
+    }
+
+    private fun togglePerms(arrow: ImageView, countText: TextView) {
+        permsExpanded = !permsExpanded
+        val anim = if (permsExpanded) {
+            RotateAnimation(0f, 180f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+        } else {
+            RotateAnimation(180f, 360f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+        }
+        anim.duration = 250
+        anim.fillAfter = true
+        arrow.startAnimation(anim)
+
+        if (permsExpanded) {
+            permsContent.visibility = View.VISIBLE
+            permsActionContainer.visibility = if (hasUnauthorizedPerms()) View.VISIBLE else View.GONE
+        } else {
+            permsContent.visibility = View.GONE
+            permsActionContainer.visibility = View.GONE
         }
     }
 
@@ -150,13 +320,11 @@ class HomeFragment : Fragment() {
         return Button(requireContext()).apply {
             this.text = text
             setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF3B82F6.toInt())
             setBackgroundResource(R.drawable.btn_primary)
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            textSize = 15f
+            paint.isFakeBoldText = true
             setOnClickListener { onClick() }
-            stateListAnimator = android.animation.StateListAnimator().apply {
-                addState(intArrayOf(android.R.attr.state_pressed), android.animation.ObjectAnimator.ofFloat(this, "scaleX", 0.97f, 0.97f).apply { duration = 0 })
-            }
         }
     }
 
@@ -164,14 +332,13 @@ class HomeFragment : Fragment() {
         return TextView(requireContext()).apply {
             this.text = text
             textSize = 12f
-            setTextColor(0xFF64748B.toInt())
+            setTextColor(0xFF92400E.toInt())
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            setBackgroundColor(0xFFFEF3C7.toInt())
             setBackgroundResource(R.drawable.tip_bg)
         }
     }
 
-    private fun refreshStatus() {
+    private fun refreshAllStatus() {
         val notificationGranted = isNotificationListenerEnabled()
         val accessibilityGranted = isAccessibilityEnabled()
         val overlayGranted = isOverlayEnabled()
@@ -182,20 +349,63 @@ class HomeFragment : Fragment() {
         val floatingEnabled = FloatingWindowService.isEnabled(requireContext())
         val backEnabled = QnhLauncher.isBackEnabled(requireContext())
 
-        val sb = StringBuilder()
-        sb.append("通知使用权：").append(if (notificationGranted) "已授权 ✅" else "未授权 ❌").append('\n')
-        sb.append("无障碍权限：").append(if (accessibilityGranted) "已授权 ✅" else "未授权 ❌").append('\n')
-        sb.append("悬浮窗权限：").append(if (overlayGranted) "已授权 ✅" else "未授权 ❌").append('\n')
-        sb.append("电池白名单：").append(if (batteryExempt) "已加入 ✅" else "未加入 ⚠️").append('\n')
-        sb.append("自动拣货：").append(if (enabled) "已启用 ✅" else "已关闭 ❌").append('\n')
-        sb.append("悬浮窗按钮：").append(if (floatingEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
-        sb.append("页面回退：").append(if (backEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
-        sb.append("牵牛花：").append(if (installed) "已安装 ✅" else "未安装 ❌")
-        statusCard.text = sb.toString()
+        val allPerms = listOf(notificationGranted, accessibilityGranted, installed)
+        val grantedCount = allPerms.count { it }
+        val allGranted = allPerms.all { it } && enabled
+
+        if (allGranted) {
+            statusTitle.text = "运行正常"
+            statusDesc.text = "核心权限已就绪，自动拣货已启用"
+            statusCard.setBackgroundResource(R.drawable.gradient_card_bg)
+        } else {
+            statusTitle.text = "需要设置"
+            statusDesc.text = "有未授权的权限或功能未开启"
+            statusCard.setBackgroundResource(R.drawable.gradient_warn_bg)
+        }
 
         if (::enableSwitch.isInitialized) enableSwitch.isChecked = enabled
         if (::floatingSwitch.isInitialized) floatingSwitch.isChecked = floatingEnabled
         if (::backSwitch.isInitialized) backSwitch.isChecked = backEnabled
+
+        refreshPermsActions()
+    }
+
+    private fun hasUnauthorizedPerms(): Boolean {
+        return !isNotificationListenerEnabled() || !isAccessibilityEnabled() ||
+            !isOverlayEnabled() || !isBatteryExempt()
+    }
+
+    private fun refreshPermsActions() {
+        permsActionContainer.removeAllViews()
+        if (!isNotificationListenerEnabled()) {
+            permsActionContainer.addView(buildPermBtn("授予通知使用权") { openNotificationListenerSettings() })
+        }
+        if (!isAccessibilityEnabled()) {
+            permsActionContainer.addView(buildPermBtn("授予无障碍权限") { openAccessibilitySettings() })
+        }
+        if (!isOverlayEnabled()) {
+            permsActionContainer.addView(buildPermBtn("授予悬浮窗权限") { openOverlaySettings() })
+        }
+        if (!isBatteryExempt()) {
+            permsActionContainer.addView(buildPermBtn("加入电池白名单") { requestBatteryExemption() })
+        }
+    }
+
+    private fun buildPermBtn(text: String, onClick: () -> Unit): Button {
+        return Button(requireContext()).apply {
+            this.text = text
+            setTextColor(0xFF3B82F6.toInt())
+            setBackgroundResource(R.drawable.btn_outline)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            textSize = 13f
+            setOnClickListener { onClick() }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(8)
+            }
+        }
     }
 
     private fun isNotificationListenerEnabled(): Boolean {
@@ -293,11 +503,24 @@ class HomeFragment : Fragment() {
     private fun lp() = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,
         LinearLayout.LayoutParams.WRAP_CONTENT
-    ).apply { bottomMargin = dp(8) }
+    )
     private fun spacer(h: Int): View = View(requireContext()).apply {
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             h
         )
     }
+}
+
+fun <A, B, C, D, E> ViewGroup.Quadruple(a: A, b: B, c: C, d: D, e: E) = object {
+    val first = a
+    val second = b
+    val third = c
+    val fourth = d
+    val fifth = e
+    operator fun component1() = a
+    operator fun component2() = b
+    operator fun component3() = c
+    operator fun component4() = d
+    operator fun component5() = e
 }

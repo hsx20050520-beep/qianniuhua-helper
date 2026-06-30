@@ -239,9 +239,10 @@ class HouerjiaFragment : Fragment() {
         }
     }
 
-    private fun showTimePickerDialog(defaultHour: Int = 9, defaultMinute: Int = 0, onTimeSet: (hour: Int, minute: Int) -> Unit) {
-        val h = if (defaultHour < 0) 9 else defaultHour
-        val m = if (defaultMinute < 0) 0 else defaultMinute
+    private fun showTimePickerDialog(defaultHour: Int = -1, defaultMinute: Int = -1, onTimeSet: (hour: Int, minute: Int) -> Unit) {
+        val cal = java.util.Calendar.getInstance()
+        val h = if (defaultHour < 0) cal.get(java.util.Calendar.HOUR_OF_DAY) else defaultHour
+        val m = if (defaultMinute < 0) cal.get(java.util.Calendar.MINUTE) else defaultMinute
         TimePickerBottomSheet(
             requireContext(),
             h,
