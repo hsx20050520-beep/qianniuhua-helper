@@ -29,18 +29,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var enableSwitch: Switch
     private lateinit var floatingSwitch: Switch
     private lateinit var backSwitch: Switch
-    private lateinit var alarmSwitch: Switch
     private lateinit var logTextView: TextView
+    private lateinit var alarmsContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(buildUi())
         refreshStatus()
+        refreshAlarms()
     }
 
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        refreshAlarms()
         refreshLogs()
     }
 
@@ -170,48 +172,23 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, 0, 0, dp(8))
         })
 
-        alarmSwitch = Switch(this).apply {
-            text = "启用定时打卡提醒"
-            isChecked = AlarmScheduler.isEnabled(this@MainActivity)
-            setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked) {
-                    showTimePickerDialog { hour, minute ->
-                        AlarmScheduler.setAlarm(this@MainActivity, hour, minute)
-                        alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(hour, minute)}"
-                        refreshStatus()
-                    }
-                } else {
-                    AlarmScheduler.cancelAlarm(this@MainActivity)
-                    alarmSwitch.text = "启用定时打卡提醒"
+        alarmsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        root.addView(alarmsContainer, lp())
+
+        val addAlarmBtn = Button(this).apply {
+            text = "+ 添加定时打卡"
+            setOnClickListener {
+                showTimePickerDialog { hour, minute ->
+                    val alarm = AlarmScheduler.addAlarm(this@MainActivity, hour, minute)
+                    Toast.makeText(this@MainActivity, "已添加定时：${AlarmScheduler.formatTime(hour, minute)}", Toast.LENGTH_SHORT).show()
+                    refreshAlarms()
                     refreshStatus()
                 }
             }
-            setPadding(dp(4), dp(8), dp(4), dp(8))
         }
-        root.addView(alarmSwitch, lp())
-
-        // 如果已设置过时间，显示当前设置
-        if (AlarmScheduler.isEnabled(this@MainActivity)) {
-            val h = AlarmScheduler.getHour(this)
-            val m = AlarmScheduler.getMinute(this)
-            if (h >= 0 && m >= 0) {
-                alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(h, m)}"
-            }
-        }
-
-        val changeTimeBtn = Button(this).apply {
-            text = "修改定时打卡时间"
-            setOnClickListener {
-                val h = AlarmScheduler.getHour(this@MainActivity)
-                val m = AlarmScheduler.getMinute(this@MainActivity)
-                showTimePickerDialog(h.coerceAtLeast(0), m.coerceAtLeast(0)) { hour, minute ->
-                    AlarmScheduler.setAlarm(this@MainActivity, hour, minute)
-                    alarmSwitch.text = "启用定时打卡提醒  ${AlarmScheduler.formatTime(hour, minute)}"
-                    Toast.makeText(this@MainActivity, "打卡时间已设置为 ${AlarmScheduler.formatTime(hour, minute)}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-        root.addView(changeTimeBtn, lp())
+        root.addView(addAlarmBtn, lp())
 
         root.addView(spacer(16))
 
@@ -327,13 +304,12 @@ class MainActivity : AppCompatActivity() {
         val enabled = prefs.getBoolean("enabled", true)
         val floatingEnabled = FloatingWindowService.isEnabled(this)
         val backEnabled = QnhLauncher.isBackEnabled(this)
-        val alarmEnabled = AlarmScheduler.isEnabled(this)
-        val alarmHour = AlarmScheduler.getHour(this)
-        val alarmMinute = AlarmScheduler.getMinute(this)
-        val alarmTimeStr = if (alarmEnabled && alarmHour >= 0 && alarmMinute >= 0) {
-            " ${AlarmScheduler.formatTime(alarmHour, alarmMinute)} ✅"
+        val alarms = AlarmScheduler.getAllAlarms(this)
+        val enabledCount = alarms.count { it.enabled }
+        val alarmStr = if (alarms.isEmpty()) {
+            "未设置 ❌"
         } else {
-            " ❌"
+            "$enabledCount 个已启用 ✅"
         }
 
         val sb = StringBuilder()
@@ -344,13 +320,87 @@ class MainActivity : AppCompatActivity() {
         sb.append("自动进入拣货任务：").append(if (enabled) "已启用 ✅" else "已关闭 ❌").append('\n')
         sb.append("悬浮窗按钮：").append(if (floatingEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
         sb.append("页面回退功能：").append(if (backEnabled) "已启用 ✅" else "已关闭 ❌").append('\n')
-        sb.append("定时打卡提醒：").append(alarmTimeStr).append('\n')
+        sb.append("定时打卡提醒：").append(alarmStr).append('\n')
         sb.append("牵牛花是否安装：").append(if (installed) "已安装 ✅" else "未安装 ❌")
         statusLine.text = sb.toString()
 
         if (::enableSwitch.isInitialized) enableSwitch.isChecked = enabled
         if (::floatingSwitch.isInitialized) floatingSwitch.isChecked = floatingEnabled
         if (::backSwitch.isInitialized) backSwitch.isChecked = backEnabled
+    }
+
+    private fun refreshAlarms() {
+        if (!::alarmsContainer.isInitialized) return
+        alarmsContainer.removeAllViews()
+        val alarms = AlarmScheduler.getAllAlarms(this)
+        if (alarms.isEmpty()) {
+            alarmsContainer.addView(TextView(this).apply {
+                text = "暂无定时，点击下方按钮添加"
+                textSize = 13f
+                setTextColor(0xFF94A3B8.toInt())
+                setPadding(dp(4), dp(8), dp(4), dp(8))
+            })
+            return
+        }
+        for (alarm in alarms) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(4), dp(6), dp(4), dp(6))
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+
+            val timeText = TextView(this).apply {
+                text = AlarmScheduler.formatTime(alarm.hour, alarm.minute)
+                textSize = 20f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            row.addView(timeText)
+
+            val switch = Switch(this).apply {
+                isChecked = alarm.enabled
+                setOnCheckedChangeListener { _, isChecked ->
+                    AlarmScheduler.updateAlarmEnabled(this@MainActivity, alarm.id, isChecked)
+                    refreshStatus()
+                }
+            }
+            row.addView(switch)
+
+            val editBtn = Button(this).apply {
+                text = "修改"
+                textSize = 12f
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(dp(4), 0, 0, 0)
+                }
+                setOnClickListener {
+                    showTimePickerDialog(alarm.hour, alarm.minute) { h, m ->
+                        AlarmScheduler.updateAlarmTime(this@MainActivity, alarm.id, h, m)
+                        Toast.makeText(this@MainActivity, "已修改为 ${AlarmScheduler.formatTime(h, m)}", Toast.LENGTH_SHORT).show()
+                        refreshAlarms()
+                        refreshStatus()
+                    }
+                }
+            }
+            row.addView(editBtn)
+
+            val deleteBtn = Button(this).apply {
+                text = "删除"
+                textSize = 12f
+                setPadding(dp(8), dp(4), dp(8), dp(4))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(dp(4), 0, 0, 0)
+                }
+                setOnClickListener {
+                    AlarmScheduler.deleteAlarm(this@MainActivity, alarm.id)
+                    Toast.makeText(this@MainActivity, "已删除定时", Toast.LENGTH_SHORT).show()
+                    refreshAlarms()
+                    refreshStatus()
+                }
+            }
+            row.addView(deleteBtn)
+
+            alarmsContainer.addView(row)
+        }
     }
 
     private fun isNotificationListenerEnabled(): Boolean {
