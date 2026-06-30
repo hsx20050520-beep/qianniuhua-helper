@@ -1,8 +1,6 @@
 package com.qnh.helper
 
-import android.app.TimePickerDialog
 import android.content.ComponentName
-import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -10,8 +8,6 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -244,15 +240,16 @@ class HouerjiaFragment : Fragment() {
     }
 
     private fun showTimePickerDialog(defaultHour: Int = 9, defaultMinute: Int = 0, onTimeSet: (hour: Int, minute: Int) -> Unit) {
-        val hour = if (defaultHour < 0) 9 else defaultHour
-        val minute = if (defaultMinute < 0) 0 else defaultMinute
-        TimePickerDialog(
+        val h = if (defaultHour < 0) 9 else defaultHour
+        val m = if (defaultMinute < 0) 0 else defaultMinute
+        TimePickerBottomSheet(
             requireContext(),
-            { _, h, m -> onTimeSet(h, m) },
-            hour,
-            minute,
-            true
-        ).show()
+            h,
+            m,
+            "选择时间"
+        ) { hour, minute ->
+            onTimeSet(hour, minute)
+        }.show()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
