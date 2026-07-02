@@ -56,7 +56,7 @@ jobs:
         run: |
           set -o pipefail
           gradle --version | head -15
-          gradle :app:assembleDebug --no-daemon --stacktrace
+          gradle :app:assembleDebug --no-daemon --stacktrace --info
 
       - name: 重命名 APK
         run: |
