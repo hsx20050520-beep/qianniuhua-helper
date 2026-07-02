@@ -3,4 +3,5 @@
     <string name="app_name">牵牛花助手 · 手绘版</string>
     <string name="listener_label">牵牛花通知监听服务</string>
     <string name="accessibility_label">牵牛花无障碍服务</string>
+    <string name="accessibility_description">用于自动检测和跳转到拣货任务页面</string>
 </resources>
