@@ -230,7 +230,6 @@ class HomeFragment : Fragment() {
             "通知使用权" to ::isNotifEnabled,
             "无障碍权限" to ::isAccessEnabled,
             "悬浮窗权限" to ::isOverlayOn,
-            "电池白名单" to ::isBatterySafe,
             "牵牛花已安装" to ::isQnhThere
         ).forEach { (label, check) ->
             items.addView(handPermRow(label, check()))
@@ -388,12 +387,12 @@ class HomeFragment : Fragment() {
 
     private fun refreshAllStatus() {
         val nl = isNotifEnabled(); val acc = isAccessEnabled()
-        val ov = isOverlayOn(); val bat = isBatterySafe(); val inst = isQnhThere()
+        val ov = isOverlayOn(); val inst = isQnhThere()
         val prefs = requireActivity().getSharedPreferences("qnh_helper", 0)
         val enabled = prefs.getBoolean("enabled", true)
 
         val coreOk = listOf(nl, acc, inst).all { it } && enabled
-        val totalOk = listOf(nl, acc, ov, bat, inst).count { it }
+        val totalOk = listOf(nl, acc, ov, inst).count { it }
 
         if (coreOk) {
             statusLabel.text = "运行正常 ✓"
@@ -414,14 +413,14 @@ class HomeFragment : Fragment() {
     }
 
     private fun hasMissing(): Boolean =
-        !isNotifEnabled() || !isAccessEnabled() || !isOverlayOn() || !isBatterySafe()
+        !isNotifEnabled() || !isAccessEnabled() || !isOverlayOn()
 
     private fun refreshActions() {
         permsActions.removeAllViews()
         if (!isNotifEnabled()) permsActions.addView(handPermBtn("授予通知使用权") { openNotif() })
         if (!isAccessEnabled()) permsActions.addView(handPermBtn("授予无障碍权限") { openAcc() })
         if (!isOverlayOn()) permsActions.addView(handPermBtn("授予悬浮窗权限") { openOverlay() })
-        if (!isBatterySafe()) permsActions.addView(handPermBtn("加入电池白名单") { reqBattery() })
+
     }
 
     private fun handPermBtn(text: String, onClick: () -> Unit): Button {
