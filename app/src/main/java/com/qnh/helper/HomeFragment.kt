@@ -45,7 +45,7 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): Pair<View, Switch> {
+    ): View {
         val scroll = ScrollView(requireContext()).apply {
             setBackgroundColor(c(R.color.bg_page))
         }
@@ -101,7 +101,7 @@ class HomeFragment : Fragment() {
 
     // ═══════ Header ═══════
 
-    private fun buildHeader(): Pair<View, Switch> {
+    private fun buildHeader(): View {
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -236,7 +236,7 @@ class HomeFragment : Fragment() {
         return Quad(arrow, items, actions, container)
     }
 
-    private fun buildPermRow(label: String, granted: Boolean): Pair<View, Switch> {
+    private fun buildPermRow(label: String, granted: Boolean): View {
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -362,7 +362,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun buildTip(): Pair<View, Switch> {
+    private fun buildTip(): View {
         return TextView(requireContext()).apply {
             text = "建议开启电池白名单，防止系统杀后台"
             textSize = 12f
