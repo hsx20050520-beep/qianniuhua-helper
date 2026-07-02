@@ -523,11 +523,12 @@ class HomeFragment : Fragment() {
     // ═══════════ Settings Intents ═══════════
 
     private fun openNotificationListenerSettings() {
+        val action = if (Build.VERSION.SDK_INT >= 22)
+            Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+        else
+            "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"
         try {
-            startActivity(Intent(
-                if (Build.VERSION.SDK_INT >= 22) Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
-                else Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-            ))
+            startActivity(Intent(action))
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "无法打开设置：${e.message}", Toast.LENGTH_LONG).show()
         }
