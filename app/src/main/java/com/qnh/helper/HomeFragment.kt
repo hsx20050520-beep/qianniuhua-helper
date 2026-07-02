@@ -45,7 +45,7 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
+    ): Pair<View, Switch> {
         val scroll = ScrollView(requireContext()).apply {
             setBackgroundColor(c(R.color.bg_page))
         }
@@ -78,7 +78,6 @@ class HomeFragment : Fragment() {
         root.addView(buildSectionTitle("功能"))
         root.addView(spacer(dp(12)))
         val f = buildFeatureSection()
-        enableSwitch = f.first; floatingSwitch = f.second; backSwitch = f.third
         root.addView(f.fourth)
 
         root.addView(spacer(dp(28)))
@@ -102,7 +101,7 @@ class HomeFragment : Fragment() {
 
     // ═══════ Header ═══════
 
-    private fun buildHeader(): View {
+    private fun buildHeader(): Pair<View, Switch> {
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -237,7 +236,7 @@ class HomeFragment : Fragment() {
         return Quad(arrow, items, actions, container)
     }
 
-    private fun buildPermRow(label: String, granted: Boolean): View {
+    private fun buildPermRow(label: String, granted: Boolean): Pair<View, Switch> {
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -266,23 +265,24 @@ class HomeFragment : Fragment() {
 
     // ═══════ Features ═══════
 
-    private fun buildFeatureSection(): Quad<Switch, Switch, Switch, View> {
+    private fun buildFeatureSection(): Quad<View, View, View, View> {
         val container = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
         }
 
         val prefs = requireActivity().getSharedPreferences("qnh_helper", 0)
 
-        val s1 = buildSwitchRow("自动进入拣货任务", "跳转到待领取页面",
+        val r1 = buildSwitchRow("自动进入拣货任务", "跳转到待领取页面",
             prefs.getBoolean("enabled", true)) { _, c ->
             prefs.edit().putBoolean("enabled", c).apply()
             refreshAllStatus()
         }
-        container.addView(s1)
+        enableSwitch = r1.second
+        container.addView(r1.first)
 
         container.addView(thinDivider())
 
-        val s2 = buildSwitchRow("悬浮窗按钮", "屏幕边缘快捷操作",
+        val r2 = buildSwitchRow("悬浮窗按钮", "屏幕边缘快捷操作",
             FloatingWindowService.isEnabled(requireContext())) { v, c ->
             if (c && !isOverlayEnabled()) {
                 Toast.makeText(requireContext(), "请先开启悬浮窗权限", Toast.LENGTH_SHORT).show()
@@ -292,18 +292,20 @@ class HomeFragment : Fragment() {
             FloatingWindowService.setEnabled(requireContext(), c)
             refreshAllStatus()
         }
-        container.addView(s2)
+        floatingSwitch = r2.second
+        container.addView(r2.first)
 
         container.addView(thinDivider())
 
-        val s3 = buildSwitchRow("页面回退功能", "到达后自动返回主页",
+        val r3 = buildSwitchRow("页面回退功能", "到达后自动返回主页",
             QnhLauncher.isBackEnabled(requireContext())) { _, c ->
             QnhLauncher.setBackEnabled(requireContext(), c)
             refreshAllStatus()
         }
-        container.addView(s3)
+        backSwitch = r3.second
+        container.addView(r3.first)
 
-        return Quad(s1, s2, s3, container)
+        return Quad(r1.first, r2.first, r3.first, container)
     }
 
     private fun buildSwitchRow(
@@ -311,7 +313,7 @@ class HomeFragment : Fragment() {
         subtitle: String,
         checked: Boolean,
         onChange: (View, Boolean) -> Unit
-    ): View {
+    ): Pair<View, Switch> {
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -334,7 +336,7 @@ class HomeFragment : Fragment() {
             setOnCheckedChangeListener { v, c -> onChange(v, c) }
         }
         row.addView(sw)
-        return row
+        return Pair(row, sw)
     }
 
     // ═══════ Components ═══════
@@ -360,7 +362,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun buildTip(): View {
+    private fun buildTip(): Pair<View, Switch> {
         return TextView(requireContext()).apply {
             text = "建议开启电池白名单，防止系统杀后台"
             textSize = 12f
