@@ -7,6 +7,10 @@ android {
     namespace = "com.qnh.helper"
     compileSdk = 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.qnh.helper"
         minSdk = 24

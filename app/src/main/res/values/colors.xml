@@ -3,5 +3,16 @@
     <color name="qnh_primary">#16A34A</color>
     <color name="qnh_primary_dark">#15803D</color>
     <color name="qnh_accent">#22C55E</color>
+    <color name="bg_page">#F1F5F9</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_on_gradient">#FFFFFF</color>
+    <color name="status_granted">#16A34A</color>
+    <color name="status_denied">#EF4444</color>
+    <color name="status_warning">#F59E0B</color>
+    <color name="border">#E2E8F0</color>
+    <color name="divider">#F1F5F9</color>
     <color name="white">#FFFFFFFF</color>
 </resources>
