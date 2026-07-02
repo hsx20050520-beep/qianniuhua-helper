@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="qnh_primary">#16A34A</color>
-    <color name="qnh_primary_dark">#15803D</color>
-    <color name="qnh_accent">#22C55E</color>
-    <color name="bg_page">#F1F5F9</color>
-    <color name="bg_card">#FFFFFF</color>
-    <color name="text_primary">#0F172A</color>
-    <color name="text_secondary">#475569</color>
-    <color name="text_muted">#94A3B8</color>
-    <color name="text_on_gradient">#FFFFFF</color>
-    <color name="status_granted">#16A34A</color>
-    <color name="status_denied">#EF4444</color>
-    <color name="status_warning">#F59E0B</color>
-    <color name="border">#E2E8F0</color>
-    <color name="divider">#F1F5F9</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="qnh_primary">#D4A017</color>
+    <color name="qnh_primary_dark">#B8860B</color>
+    <color name="qnh_accent">#E8C547</color>
+    <color name="bg_page">#FAF6F0</color>
+    <color name="bg_card">#FFFEF5</color>
+    <color name="bg_sticky">#FFF8DC</color>
+    <color name="text_primary">#3D3D3D</color>
+    <color name="text_secondary">#5C5C5C</color>
+    <color name="text_muted">#8B8B8B</color>
+    <color name="text_on_sticky">#4A4022</color>
+    <color name="status_granted">#6B8E23</color>
+    <color name="status_denied">#CD5C5C</color>
+    <color name="status_warning">#DAA520</color>
+    <color name="border">#D4C5A9</color>
+    <color name="divider">#E8DDCC</color>
+    <color name="white">#FFFFFF</color>
 </resources>

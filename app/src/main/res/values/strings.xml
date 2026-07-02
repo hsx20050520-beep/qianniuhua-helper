@@ -1,6 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">牵牛花跳转助手</string>
-    <string name="listener_label">牵牛花跳转助手 · 通知监听</string>
-    <string name="accessibility_label">牵牛花跳转助手 · 拣货入口跳转</string>
-    <string name="accessibility_description">收到牵牛花拣货通知后，仅用于进入牵牛花里的“拣货任务”入口。</string>
+    <string name="app_name">牵牛花助手 · 手绘版</string>
 </resources>
